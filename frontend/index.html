@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Life Expectancy AI</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --secondary: #4f46e5;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 95%;
+            max-width: 1000px;
+            background: var(--card);
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            overflow: hidden;
+            min-height: 600px;
+        }
+
+        /* Form Side */
+        .form-side {
+            padding: 40px;
+            border-right: 1px solid #f1f5f9;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            margin: 0 0 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .grid-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .full-width { grid-column: span 2; }
+
+        .form-group label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #64748b;
+            margin-bottom: 6px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            box-sizing: border-box;
+            transition: all 0.2s;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: background 0.2s;
+        }
+
+        .btn:hover { background: var(--secondary); }
+
+        /* Results Side */
+        .result-side {
+            background: #f1f5f9;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .res-card {
+            background: white;
+            padding: 20px;
+            border-radius: 16px;
+            width: 100%;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+
+        .prediction-value {
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin: 10px 0;
+        }
+
+        /* Result Colors */
+        .cat-high { color: #10b981; }
+        .cat-medium { color: #f59e0b; }
+        .cat-low { color: #ef4444; }
+
+        .loader {
+            display: none;
+            width: 24px;
+            height: 24px;
+            border: 3px solid #FFF;
+            border-bottom-color: transparent;
+            border-radius: 50%;
+            animation: rotation 1s linear infinite;
+        }
+
+        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        @media (max-width: 768px) {
+            .container { grid-template-columns: 1fr; }
+            .form-side { border-right: none; border-bottom: 1px solid #eee; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="form-side">
+        <div class="header">
+            <h1>🌍 Life Expectancy AI</h1>
+            <p style="color: #64748b; font-size: 0.9rem;">Predict socio-economic categories using ML</p>
+        </div>
+
+        <form id="predictForm">
+            <div class="grid-inputs">
+                <div class="form-group full-width">
+                    <label>GDP per Capita (USD)</label>
+                    <input type="number" id="gdp_per_capita" value="15000" required>
+                </div>
+                <div class="form-group">
+                    <label>Infant Mortality</label>
+                    <input type="number" step="0.1" id="infant_mortality" value="12.5" required>
+                </div>
+                <div class="form-group">
+                    <label>Fertility Rate</label>
+                    <input type="number" step="0.1" id="fertility" value="2.1" required>
+                </div>
+                <div class="form-group">
+                    <label>Unemployment %</label>
+                    <input type="number" step="0.1" id="unemployment" value="5.5" required>
+                </div>
+                <div class="form-group">
+                    <label>Internet Users %</label>
+                    <input type="number" step="0.1" id="internet_users" value="70" required>
+                </div>
+
+                <div class="form-group full-width">
+                    <label>Region</label>
+                    <select id="region">
+                        <option value="">Loading regions...</option>
+                    </select>
+                </div>      
+            </div>
+            <button type="submit" class="btn" id="submitBtn">
+                <span id="btnText">Generate Prediction</span>
+                <div class="loader" id="loader"></div>
+            </button>
+        </form>
+    </div>
+
+    <div class="result-side">
+        <div id="placeholderText">
+            <p style="color: #94a3b8;">Enter data and click predict to see results</p>
+        </div>
+        
+        <div id="results" style="display: none; width: 100%;">
+            <div class="res-card">
+                <label style="font-size: 0.7rem; font-weight: bold; color: #64748b;">LOGISTIC REGRESSION</label>
+                <div id="logPred" class="prediction-value">-</div>
+                <div id="logConf" style="font-size: 0.8rem; color: #94a3b8;"></div>
+            </div>
+
+            <div class="res-card">
+                <label style="font-size: 0.7rem; font-weight: bold; color: #64748b;">DECISION TREE</label>
+                <div id="treePred" class="prediction-value">-</div>
+                <div id="treeConf" style="font-size: 0.8rem; color: #94a3b8;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const form = document.getElementById('predictForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const loader = document.getElementById('loader');
+    const btnText = document.getElementById('btnText');
+
+    form.onsubmit = async (e) => {
+        e.preventDefault();
+        
+        // UI State
+        btnText.style.display = 'none';
+        loader.style.display = 'inline-block';
+        submitBtn.disabled = true;
+
+        const formData = {
+            gdp_per_capita: parseFloat(document.getElementById('gdp_per_capita').value),
+            infant_mortality: parseFloat(document.getElementById('infant_mortality').value),
+            fertility: parseFloat(document.getElementById('fertility').value),
+            unemployment: parseFloat(document.getElementById('unemployment').value),
+            internet_users: parseFloat(document.getElementById('internet_users').value),
+            region: document.getElementById('region').value
+        };
+
+        try {
+            const response = await fetch('http://127.0.0.1:8000/predict', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                displayResults(data);
+            } else {
+                alert("Error: " + data.detail);
+            }
+        } catch (err) {
+            alert("Could not connect to the API. Make sure FastAPI is running.");
+        } finally {
+            btnText.style.display = 'inline-block';
+            loader.style.display = 'none';
+            submitBtn.disabled = false;
+        }
+    };
+
+    function displayResults(data) {
+    document.getElementById('placeholderText').style.display = 'none';
+    document.getElementById('results').style.display = 'block';
+
+    // Logistic Regression
+    const logElem = document.getElementById('logPred');
+    const logConfElem = document.getElementById('logConf');
+    logElem.innerText = data.logistic_regression;
+    logConfElem.innerText = `Confidence: ${(data.model_confidence.logistic * 100).toFixed(1)}%`;
+
+    // Decision Tree (Random Forest)
+    const treeElem = document.getElementById('treePred');
+    const treeConfElem = document.getElementById('treeConf');
+    treeElem.innerText = data.decision_tree;
+    treeConfElem.innerText = `Confidence: ${(data.model_confidence.tree * 100).toFixed(1)}%`;
+
+    // Apply colors to both predictions
+    [logElem, treeElem].forEach(el => {
+        el.className = 'prediction-value'; // reset
+        const val = el.innerText.toLowerCase();
+        if (val.includes('high')) el.classList.add('cat-high');
+        else if (val.includes('medium')) el.classList.add('cat-medium');
+        else el.classList.add('cat-low');
+    });
+}
+// Fetch regions from API when page loads
+    async function loadRegions() {
+        try {
+            const response = await fetch('http://127.0.0.1:8000/regions');
+            const data = await response.json();
+            const select = document.getElementById('region');
+            
+            select.innerHTML = ''; // Clear "Loading..."
+            data.regions.forEach(region => {
+                const opt = document.createElement('option');
+                opt.value = region;
+                opt.innerHTML = region;
+                select.appendChild(opt);
+            });
+        } catch (err) {
+            console.error("Failed to load regions:", err);
+        }
+    }
+    loadRegions();
+</script>
+</body>
+</html>
